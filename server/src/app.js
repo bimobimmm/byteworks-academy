@@ -7,11 +7,26 @@ import courseRoutes from "./routes/courses.js";
 import examRoutes from "./routes/exams.js";
 import userRoutes from "./routes/users.js";
 import resultRoutes from "./routes/results.js";
+import monitorRoutes from "./routes/monitor.js";
 
 dotenv.config();
 
 const app = express();
 const clientOrigin = process.env.CLIENT_ORIGIN || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5173");
+
+app.use(express.json());
+
+const db = await initDb();
+app.locals.db = db;
+
+app.use(
+  "/api/monitor",
+  cors({
+    origin: "*",
+    allowedHeaders: ["Content-Type", "x-monitor-token"]
+  }),
+  monitorRoutes
+);
 
 app.use(
   cors({
@@ -19,10 +34,6 @@ app.use(
     credentials: true
   })
 );
-app.use(express.json());
-
-const db = await initDb();
-app.locals.db = db;
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "ByteWorks Academy API" });

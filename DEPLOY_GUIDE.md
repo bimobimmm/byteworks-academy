@@ -77,6 +77,7 @@ Install Command: npm install
 JWT_SECRET=isi_secret_panjang_random
 DATABASE_URL=postgresql://postgres.poesyobvlctpqojygvet:PASSWORD@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres
 DATABASE_SSL=true
+MONITOR_TOKEN=isi_token_panjang_untuk_jarvis
 VITE_API_URL=/api
 VITE_SUPABASE_URL=https://poesyobvlctpqojygvet.supabase.co
 VITE_SUPABASE_ANON_KEY=anon_public_key
@@ -96,6 +97,18 @@ Harus muncul:
 
 ```json
 {"status":"ok","service":"ByteWorks Academy API"}
+```
+
+Endpoint monitor Jarvis:
+
+```text
+https://DOMAIN-VERCEL/api/monitor
+```
+
+Header yang wajib dipakai oleh Jarvis:
+
+```text
+x-monitor-token: isi_token_yang_sama_dengan_MONITOR_TOKEN
 ```
 
 ## Tahap 6 - Aktifkan Supabase Realtime
