@@ -2,8 +2,6 @@ import bcrypt from "bcryptjs";
 import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
 
 export async function initDb() {
   if (process.env.DATABASE_URL) {
@@ -17,6 +15,8 @@ export async function initDb() {
   const resolved = path.resolve(databaseFile);
   fs.mkdirSync(path.dirname(resolved), { recursive: true });
 
+  const sqlite3 = (await import("sqlite3")).default;
+  const { open } = await import("sqlite");
   const db = await open({
     filename: resolved,
     driver: sqlite3.Database

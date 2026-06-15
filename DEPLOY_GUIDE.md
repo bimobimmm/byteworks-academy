@@ -1,171 +1,104 @@
 # Panduan Deploy ByteWorks Academy
 
-Panduan ini untuk deploy gratis memakai:
+Panduan ini memakai:
 
 - GitHub untuk menyimpan source code
 - Supabase Free untuk database PostgreSQL + realtime exam result
-- Render Free untuk backend dan frontend
+- Vercel Hobby untuk hosting frontend + backend API serverless
 
-## Tahap 1 - Buat Akun
+## Tahap 1 - Akun
 
 Siapkan akun:
 
 - GitHub: https://github.com
 - Supabase: https://supabase.com
-- Render: https://render.com
+- Vercel: https://vercel.com
 
-Gunakan login GitHub di Render agar repository mudah dipilih.
+Gunakan login GitHub di Vercel agar repository mudah dipilih.
 
-## Tahap 2 - Upload Project ke GitHub
+## Tahap 2 - GitHub
 
-Buka terminal di folder:
+Repository project:
 
-```bash
-cd "D:\0.1 WORKSTATION\jarvis-ai\Byteworks-Academy"
+```text
+https://github.com/bimobimmm/byteworks-academy
 ```
 
-Jalankan:
+Setiap ada perubahan lokal:
 
 ```bash
-git init
 git add .
-git commit -m "Initial ByteWorks Academy"
+git commit -m "Update"
+git push
 ```
 
-Buka GitHub, buat repository baru, misalnya:
+## Tahap 3 - Supabase
+
+Project Supabase:
 
 ```text
-byteworks-academy
+https://poesyobvlctpqojygvet.supabase.co
 ```
 
-Setelah repo dibuat, GitHub akan memberi command seperti ini:
-
-```bash
-git remote add origin https://github.com/USERNAME/byteworks-academy.git
-git branch -M main
-git push -u origin main
-```
-
-Jalankan command dari GitHub itu di terminal.
-
-## Tahap 3 - Buat Database Supabase
-
-1. Masuk ke Supabase.
-2. Klik `New project`.
-3. Isi nama project, contoh `byteworks-academy`.
-4. Buat password database dan simpan baik-baik.
-5. Pilih region terdekat.
-6. Klik `Create new project`.
-
-Setelah project aktif:
-
-1. Buka `Project Settings`.
-2. Buka `Database`.
-3. Copy connection string PostgreSQL URI dari bagian **Connection Pooling / Supavisor**.
-4. Untuk Render Free, pakai **Session pooler** atau **Transaction pooler**, bukan Direct Connection.
-5. Ganti bagian password dengan password database kamu.
-
-Formatnya kurang lebih:
-
-```env
-postgres://postgres.PROJECT_REF:PASSWORD@aws-REGION.pooler.supabase.com:5432/postgres
-```
-
-Catatan: jangan pakai direct string seperti `db.PROJECT_REF.supabase.co:5432` untuk Render Free, karena direct connection Supabase memakai IPv6 dan Render dapat bermasalah di jaringan IPv4-only.
-
-Lalu:
-
-1. Buka `Project Settings > API`.
-2. Copy `Project URL`.
-3. Copy `anon public key`.
-
-## Tahap 4 - Deploy Backend di Render
-
-1. Masuk ke Render.
-2. Klik `New +`.
-3. Pilih `Web Service`.
-4. Connect GitHub repository `byteworks-academy`.
-5. Isi:
+Gunakan connection string dari:
 
 ```text
-Name: byteworks-academy-api
-Root Directory: server
-Build Command: npm install
-Start Command: npm start
-Instance Type: Free
+Connect > Direct > Session pooler > URI
 ```
 
-Tambahkan Environment Variables:
+Format:
 
 ```env
-JWT_SECRET=buat_secret_panjang_random
-DATABASE_URL=postgresql://...
+postgresql://postgres.PROJECT_REF:PASSWORD@aws-REGION.pooler.supabase.com:5432/postgres
+```
+
+Jangan pakai direct connection `db.PROJECT_REF.supabase.co` untuk serverless hosting.
+
+## Tahap 4 - Deploy ke Vercel
+
+1. Buka https://vercel.com
+2. Login pakai GitHub.
+3. Klik `Add New...`.
+4. Pilih `Project`.
+5. Import repository `bimobimmm/byteworks-academy`.
+6. Setting project:
+
+```text
+Framework Preset: Other
+Root Directory: ./
+Build Command: npm run vercel-build
+Output Directory: client/dist
+Install Command: npm install
+```
+
+7. Tambahkan Environment Variables:
+
+```env
+JWT_SECRET=isi_secret_panjang_random
+DATABASE_URL=postgresql://postgres.poesyobvlctpqojygvet:PASSWORD@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres
 DATABASE_SSL=true
-CLIENT_ORIGIN=https://ISI_NANTI_SETELAH_FRONTEND_DEPLOY
-```
-
-Klik `Deploy Web Service`.
-
-Setelah selesai, Render memberi URL backend seperti:
-
-```text
-https://byteworks-academy-api.onrender.com
-```
-
-Cek backend:
-
-```text
-https://byteworks-academy-api.onrender.com/api/health
-```
-
-Kalau muncul status `ok`, backend sudah hidup.
-
-## Tahap 5 - Deploy Frontend di Render
-
-1. Render klik `New +`.
-2. Pilih `Static Site`.
-3. Pilih repository yang sama.
-4. Isi:
-
-```text
-Name: byteworks-academy
-Root Directory: client
-Build Command: npm install && npm run build
-Publish Directory: dist
-```
-
-Tambahkan Environment Variables:
-
-```env
-VITE_API_URL=https://URL_BACKEND_RENDER/api
-VITE_SUPABASE_URL=https://PROJECT_ID.supabase.co
+VITE_API_URL=/api
+VITE_SUPABASE_URL=https://poesyobvlctpqojygvet.supabase.co
 VITE_SUPABASE_ANON_KEY=anon_public_key
 ```
 
-Klik `Deploy Static Site`.
+8. Klik `Deploy`.
 
-Setelah selesai, Render memberi URL frontend seperti:
+## Tahap 5 - Cek API
+
+Setelah deploy selesai, buka:
 
 ```text
-https://byteworks-academy.onrender.com
+https://DOMAIN-VERCEL/api/health
 ```
 
-## Tahap 6 - Update CLIENT_ORIGIN Backend
+Harus muncul:
 
-Balik ke backend Render:
-
-1. Buka service backend.
-2. Buka `Environment`.
-3. Ubah:
-
-```env
-CLIENT_ORIGIN=https://URL_FRONTEND_RENDER
+```json
+{"status":"ok","service":"ByteWorks Academy API"}
 ```
 
-4. Klik save.
-5. Redeploy backend.
-
-## Tahap 7 - Aktifkan Supabase Realtime
+## Tahap 6 - Aktifkan Supabase Realtime
 
 Untuk realtime exam result:
 
@@ -175,7 +108,7 @@ Untuk realtime exam result:
 4. Pilih `supabase_realtime`.
 5. Aktifkan table `exam_results`.
 
-## Tahap 8 - Tes Website
+## Tahap 7 - Tes Website
 
 Tes login admin:
 
@@ -202,4 +135,4 @@ Yang harus dicek:
 
 ## Catatan Gratis
 
-Render Free bisa sleep jika lama tidak diakses. Saat dibuka lagi, backend mungkin perlu beberapa detik untuk hidup kembali.
+Vercel Hobby cocok untuk tahap awal. Backend berjalan sebagai serverless function, jadi database wajib memakai Supabase pooler.
