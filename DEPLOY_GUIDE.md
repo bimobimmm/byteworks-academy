@@ -61,14 +61,17 @@ Setelah project aktif:
 
 1. Buka `Project Settings`.
 2. Buka `Database`.
-3. Copy connection string PostgreSQL URI.
-4. Ganti bagian password dengan password database kamu.
+3. Copy connection string PostgreSQL URI dari bagian **Connection Pooling / Supavisor**.
+4. Untuk Render Free, pakai **Session pooler** atau **Transaction pooler**, bukan Direct Connection.
+5. Ganti bagian password dengan password database kamu.
 
 Formatnya kurang lebih:
 
 ```env
-postgresql://postgres.xxxxx:PASSWORD@aws-xxxx.pooler.supabase.com:6543/postgres
+postgres://postgres.PROJECT_REF:PASSWORD@aws-REGION.pooler.supabase.com:5432/postgres
 ```
+
+Catatan: jangan pakai direct string seperti `db.PROJECT_REF.supabase.co:5432` untuk Render Free, karena direct connection Supabase memakai IPv6 dan Render dapat bermasalah di jaringan IPv4-only.
 
 Lalu:
 
