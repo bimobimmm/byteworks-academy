@@ -26,13 +26,75 @@ router.get("/progress/me", authMiddleware, memberOnly, async (req, res) => {
   const totalLessons = Number(courseStats?.total_lessons || 0);
   const completedLessons = Number(completedStats?.completed_lessons || 0);
   const learningProgress = totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const lastOpenedCourse = await db.get(`
+    SELECT
+      courses.id as course_id,
+      courses.title as course_title,
+      course_activity.opened_at,
+      lessons.id as lesson_id,
+      lessons.title as lesson_title,
+      lessons.order_number as lesson_order
+    FROM course_activity
+    JOIN courses ON courses.id = course_activity.course_id
+    LEFT JOIN lessons ON lessons.id = course_activity.last_lesson_id
+    WHERE course_activity.user_id = ? AND courses.is_published = 1
+    ORDER BY course_activity.opened_at DESC
+    LIMIT 1
+  `, req.user.id);
+  const lastCompletedLesson = await db.get(`
+    SELECT
+      courses.id as course_id,
+      courses.title as course_title,
+      lessons.id as lesson_id,
+      lessons.title as lesson_title,
+      lessons.order_number as lesson_order,
+      lesson_progress.updated_at
+    FROM lesson_progress
+    JOIN courses ON courses.id = lesson_progress.course_id
+    JOIN lessons ON lessons.id = lesson_progress.lesson_id
+    WHERE lesson_progress.user_id = ? AND lesson_progress.completed = 1 AND courses.is_published = 1
+    ORDER BY lesson_progress.updated_at DESC
+    LIMIT 1
+  `, req.user.id);
+  const latestExam = await db.get(`
+    SELECT exam_results.*, exams.title as exam_title
+    FROM exam_results
+    JOIN exams ON exams.id = exam_results.exam_id
+    WHERE exam_results.user_id = ?
+    ORDER BY exam_results.created_at DESC
+    LIMIT 1
+  `, req.user.id);
+  const nextLesson = await db.get(`
+    SELECT
+      courses.id as course_id,
+      courses.title as course_title,
+      lessons.id as lesson_id,
+      lessons.title as lesson_title,
+      lessons.order_number as lesson_order
+    FROM courses
+    JOIN lessons ON lessons.course_id = courses.id
+    LEFT JOIN lesson_progress
+      ON lesson_progress.lesson_id = lessons.id
+      AND lesson_progress.user_id = ?
+      AND lesson_progress.completed = 1
+    WHERE courses.is_published = 1 AND lesson_progress.lesson_id IS NULL
+    ORDER BY
+      CASE WHEN courses.id = ? THEN 0 ELSE 1 END,
+      courses.id,
+      lessons.order_number
+    LIMIT 1
+  `, req.user.id, lastOpenedCourse?.course_id || 0);
 
   res.json({
     progress: {
       totalCourses: Number(courseStats?.total_courses || 0),
       totalLessons,
       completedLessons,
-      learningProgress
+      learningProgress,
+      lastOpenedCourse: lastOpenedCourse || null,
+      lastCompletedLesson: lastCompletedLesson || null,
+      latestExam: latestExam || null,
+      recommendation: buildRecommendation({ nextLesson, latestExam, completedLessons, totalLessons })
     }
   });
 });
@@ -53,6 +115,20 @@ router.get("/:id", authMiddleware, memberOnly, async (req, res) => {
   const course = await db.get("SELECT * FROM courses WHERE id = ?", req.params.id);
   if (!course) return res.status(404).json({ message: "Course not found" });
   const lessons = await db.all("SELECT * FROM lessons WHERE course_id = ? ORDER BY order_number", req.params.id);
+  const firstLessonId = lessons[0]?.id || null;
+  await db.run(
+    `
+      INSERT INTO course_activity (user_id, course_id, last_lesson_id, opened_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, course_id) DO UPDATE SET
+        last_lesson_id = COALESCE(course_activity.last_lesson_id, excluded.last_lesson_id),
+        opened_at = CURRENT_TIMESTAMP
+      RETURNING user_id
+    `,
+    req.user.id,
+    req.params.id,
+    firstLessonId
+  );
   const progressRows = await db.all(
     "SELECT lesson_id, notes, checked_json, saved, completed FROM lesson_progress WHERE user_id = ? AND course_id = ?",
     req.user.id,
@@ -104,6 +180,19 @@ router.put("/:id/progress/:lessonId", authMiddleware, memberOnly, async (req, re
     JSON.stringify(checked),
     saved,
     completed
+  );
+  await db.run(
+    `
+      INSERT INTO course_activity (user_id, course_id, last_lesson_id, opened_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, course_id) DO UPDATE SET
+        last_lesson_id = excluded.last_lesson_id,
+        opened_at = CURRENT_TIMESTAMP
+      RETURNING user_id
+    `,
+    req.user.id,
+    req.params.id,
+    req.params.lessonId
   );
 
   const progress = await db.get(
@@ -212,6 +301,36 @@ function parseCheckedJson(value) {
   } catch {
     return {};
   }
+}
+
+function buildRecommendation({ nextLesson, latestExam, completedLessons, totalLessons }) {
+  if (nextLesson) {
+    return {
+      type: "lesson",
+      title: "Continue Learning",
+      description: `Continue Module ${nextLesson.lesson_order} in ${nextLesson.course_title}.`,
+      course_id: nextLesson.course_id,
+      lesson_id: nextLesson.lesson_id,
+      action_label: "Continue Course"
+    };
+  }
+
+  if (totalLessons > 0 && completedLessons >= totalLessons && latestExam && !Number(latestExam.passed)) {
+    return {
+      type: "exam",
+      title: "Retake Exam",
+      description: `Your latest score in ${latestExam.exam_title} was ${latestExam.score}%. Retake it when ready.`,
+      exam_id: latestExam.exam_id,
+      action_label: "Retake Exam"
+    };
+  }
+
+  return {
+    type: "complete",
+    title: "All Learning Completed",
+    description: "You have completed all available lessons. Review your certificates or explore new courses when they are published.",
+    action_label: "View Certificates"
+  };
 }
 
 export default router;
