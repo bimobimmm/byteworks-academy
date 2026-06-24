@@ -1,10 +1,19 @@
-import { ArrowRight, BadgeCheck, LockKeyhole, Server, ShieldCheck } from "lucide-react";
+import { ArrowRight, BadgeCheck, ImageUp, LockKeyhole, Server, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import DatabaseHero3D from "../components/DatabaseHero3D.jsx";
+import { api } from "../lib/api.js";
 
 const paths = ["Oracle DBA", "MySQL DBA", "Microsoft SQL Server DBA", "PostgreSQL DBA"];
 
 export default function Home() {
+  const [homeHeroImage, setHomeHeroImage] = useState("");
+
+  useEffect(() => {
+    api("/seminar")
+      .then((data) => setHomeHeroImage(data.seminar?.home_hero_data_url || ""))
+      .catch(() => setHomeHeroImage(""));
+  }, []);
+
   return (
     <>
       <section className="overflow-hidden bg-white">
@@ -31,7 +40,25 @@ export default function Home() {
             </div>
           </div>
 
-          <DatabaseHero3D />
+          <div className="panel overflow-hidden">
+            {homeHeroImage ? (
+              <img
+                src={homeHeroImage}
+                alt="ByteWorks Academy homepage hero"
+                className="aspect-[4/3] h-full w-full bg-byte-ash object-cover lg:aspect-[1.07/1]"
+              />
+            ) : (
+              <div className="flex aspect-[4/3] min-h-[360px] flex-col items-center justify-center bg-byte-ash px-8 text-center lg:aspect-[1.07/1] lg:min-h-[520px]">
+                <span className="flex h-16 w-16 items-center justify-center rounded-md bg-white text-byte-maroon shadow-sm">
+                  <ImageUp size={30} />
+                </span>
+                <h2 className="mt-6 text-2xl font-black text-byte-black">Upload the homepage hero image</h2>
+                <p className="mt-3 max-w-md text-sm leading-6 text-byte-graphite">
+                  Use the admin dashboard to publish the image shown in this homepage hero area.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

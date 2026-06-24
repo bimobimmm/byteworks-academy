@@ -129,10 +129,12 @@ async function migrateSqlite(db) {
     CREATE TABLE IF NOT EXISTS seminar_settings (
       id INTEGER PRIMARY KEY,
       poster_data_url TEXT NOT NULL DEFAULT '',
+      home_hero_data_url TEXT NOT NULL DEFAULT '',
       registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
     );
   `);
 
+  await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
   await db.run("INSERT OR IGNORE INTO seminar_settings (id) VALUES (1)");
 }
 
@@ -196,11 +198,22 @@ async function migratePostgres(db) {
     CREATE TABLE IF NOT EXISTS seminar_settings (
       id INTEGER PRIMARY KEY,
       poster_data_url TEXT NOT NULL DEFAULT '',
+      home_hero_data_url TEXT NOT NULL DEFAULT '',
       registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
     );
   `);
 
+  await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
   await db.run("INSERT INTO seminar_settings (id) VALUES (?) ON CONFLICT (id) DO NOTHING", 1);
+}
+
+async function ensureColumn(db, tableName, columnName, columnDefinition) {
+  try {
+    await db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`);
+  } catch (error) {
+    const message = String(error?.message || "");
+    if (!/duplicate column|already exists/i.test(message)) throw error;
+  }
 }
 
 async function seed(db) {

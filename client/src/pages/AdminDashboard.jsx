@@ -6,7 +6,7 @@ const emptyCourse = { title: "", slug: "", description: "", level: "Beginner", d
 const emptyLesson = { title: "", content: "", order_number: 1 };
 const emptyExam = { course_id: "", title: "", passing_score: 75 };
 const emptyQuestion = { question: "", option_a: "", option_b: "", option_c: "", option_d: "", correct_answer: "A" };
-const emptySeminar = { poster_data_url: "", registration_url: "https://discord.gg/PHaqJTz9H" };
+const emptySeminar = { poster_data_url: "", home_hero_data_url: "", registration_url: "https://discord.gg/PHaqJTz9H" };
 
 export default function AdminDashboard() {
   const [courses, setCourses] = useState([]);
@@ -151,20 +151,28 @@ export default function AdminDashboard() {
     await load();
   }
 
-  function handleSeminarPoster(event) {
+  function handleImageUpload(event, fieldName, readyMessage) {
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setSeminarStatus("Poster must be 5 MB or smaller.");
+      setSeminarStatus("Image must be 5 MB or smaller.");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
-      setSeminarForm((current) => ({ ...current, poster_data_url: reader.result }));
-      setSeminarStatus("Poster is ready to save.");
+      setSeminarForm((current) => ({ ...current, [fieldName]: reader.result }));
+      setSeminarStatus(readyMessage);
     };
     reader.readAsDataURL(file);
+  }
+
+  function handleSeminarPoster(event) {
+    handleImageUpload(event, "poster_data_url", "Seminar poster is ready to save.");
+  }
+
+  function handleHomeHeroImage(event) {
+    handleImageUpload(event, "home_hero_data_url", "Homepage hero image is ready to save.");
   }
 
   async function saveSeminar(event) {
@@ -185,6 +193,16 @@ export default function AdminDashboard() {
     setSeminarStatus("Poster removed.");
   }
 
+  async function removeHomeHeroImage() {
+    setSeminarStatus("Removing homepage hero image...");
+    const data = await api("/seminar", {
+      method: "PUT",
+      body: JSON.stringify({ ...seminarForm, remove_home_hero: true })
+    });
+    setSeminarForm(data.seminar);
+    setSeminarStatus("Homepage hero image removed.");
+  }
+
   return (
     <section className="section py-16">
       <p className="text-sm font-bold uppercase tracking-[0.2em] text-byte-maroon">Admin</p>
@@ -196,15 +214,34 @@ export default function AdminDashboard() {
       <section className="panel mt-10 p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
           <div>
-            <h2 className="text-2xl font-black">Seminar Page</h2>
+            <h2 className="text-2xl font-black">Public Page Images</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-byte-graphite">
-              Upload the seminar poster and manage the registration link shown on the public page.
+              Upload the homepage hero image, seminar poster, and manage the registration link shown on the public seminar page.
             </p>
           </div>
           <a className="btn-secondary py-2" href="/seminar" target="_blank" rel="noreferrer">Open Seminar Page</a>
         </div>
 
-        <form className="mt-6 grid gap-6 lg:grid-cols-[0.72fr_1.28fr]" onSubmit={saveSeminar}>
+        <form className="mt-6 grid gap-6 lg:grid-cols-[0.85fr_0.72fr_1.1fr]" onSubmit={saveSeminar}>
+          <div className="grid content-start gap-3">
+            <h3 className="text-lg font-black">Homepage Hero Image</h3>
+            <div className="overflow-hidden rounded-md border border-byte-line bg-byte-ash">
+              {seminarForm.home_hero_data_url ? (
+                <img className="aspect-[4/3] w-full object-cover" src={seminarForm.home_hero_data_url} alt="Preview homepage hero" />
+              ) : (
+                <div className="flex aspect-[4/3] min-h-60 flex-col items-center justify-center px-6 text-center">
+                  <ImageUp className="text-byte-maroon" size={38} />
+                  <p className="mt-4 text-sm font-bold text-byte-black">No hero image uploaded</p>
+                </div>
+              )}
+            </div>
+            <label className="grid gap-2 text-sm font-bold">
+              Homepage hero
+              <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleHomeHeroImage} />
+            </label>
+            <button className="btn-secondary w-fit" type="button" onClick={removeHomeHeroImage}><X size={18} />Remove Hero Image</button>
+          </div>
+
           <div className="overflow-hidden rounded-md border border-byte-line bg-byte-ash">
             {seminarForm.poster_data_url ? (
               <img className="aspect-[4/5] w-full object-cover" src={seminarForm.poster_data_url} alt="Preview poster seminar" />
@@ -217,6 +254,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid content-start gap-4">
+            <h3 className="text-lg font-black">Seminar Page</h3>
             <label className="grid gap-2 text-sm font-bold">
               Seminar poster
               <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSeminarPoster} />
