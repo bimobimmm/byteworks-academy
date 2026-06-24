@@ -1,6 +1,7 @@
 import { Award, Download, ImageUp, Save, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api, apiBlob } from "../lib/api.js";
+import { compressImageFile, formatBytes } from "../lib/images.js";
 
 export default function AdminCertificates() {
   const [certificates, setCertificates] = useState([]);
@@ -46,11 +47,20 @@ export default function AdminCertificates() {
     URL.revokeObjectURL(url);
   }
 
-  function readImageFile(file, field) {
+  async function readImageFile(file, field) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setSettings((current) => ({ ...current, [field]: reader.result }));
-    reader.readAsDataURL(file);
+    try {
+      setStatus("Compressing certificate image...");
+      const compressed = await compressImageFile(file, {
+        maxWidth: field === "signature_data_url" ? 900 : 700,
+        maxHeight: field === "signature_data_url" ? 280 : 700,
+        outputType: "image/png"
+      });
+      setSettings((current) => ({ ...current, [field]: compressed.dataUrl }));
+      setStatus(`Image ready. Compressed from ${formatBytes(compressed.originalBytes)} to ${formatBytes(compressed.compressedBytes)}.`);
+    } catch (error) {
+      setStatus(error.message || "Image could not be compressed.");
+    }
   }
 
   async function saveSettings(event) {
@@ -182,7 +192,10 @@ function ImageSetting({ label, image, emptyText, onUpload, onRemove }) {
           </div>
         )}
       </div>
-      <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => onUpload(event.target.files?.[0])} />
+      <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
+        onUpload(event.target.files?.[0]);
+        event.target.value = "";
+      }} />
       <button className="btn-secondary w-fit py-2 text-xs" type="button" onClick={onRemove}><X size={15} />Remove</button>
     </div>
   );

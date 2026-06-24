@@ -1,6 +1,7 @@
 import { ImageUp, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
+import { compressImageFile, formatBytes } from "../lib/images.js";
 
 const emptyCourse = { title: "", slug: "", description: "", level: "Beginner", duration: "4 weeks", is_published: true };
 const emptyLesson = { title: "", content: "", order_number: 1 };
@@ -169,29 +170,29 @@ export default function AdminDashboard() {
     await load();
   }
 
-  function handleImageUpload(event, fieldName, readyMessage) {
+  async function handleImageUpload(event, fieldName, readyMessage, options) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setSeminarStatus("Image must be 5 MB or smaller.");
-      return;
-    }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSeminarForm((current) => ({ ...current, [fieldName]: reader.result }));
+    try {
+      setSeminarStatus("Compressing image...");
+      const compressed = await compressImageFile(file, options);
+      setSeminarForm((current) => ({ ...current, [fieldName]: compressed.dataUrl }));
       setImageChanges((current) => ({ ...current, [fieldName === "home_hero_data_url" ? "homeHero" : "poster"]: true }));
-      setSeminarStatus(readyMessage);
-    };
-    reader.readAsDataURL(file);
+      setSeminarStatus(`${readyMessage} Compressed from ${formatBytes(compressed.originalBytes)} to ${formatBytes(compressed.compressedBytes)}.`);
+    } catch (error) {
+      setSeminarStatus(error.message || "Image could not be compressed.");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function handleSeminarPoster(event) {
-    handleImageUpload(event, "poster_data_url", "Seminar poster is ready to save.");
+    handleImageUpload(event, "poster_data_url", "Seminar poster is ready to save.", { maxWidth: 1400, maxHeight: 1800 });
   }
 
   function handleHomeHeroImage(event) {
-    handleImageUpload(event, "home_hero_data_url", "Homepage hero image is ready to save.");
+    handleImageUpload(event, "home_hero_data_url", "Homepage hero image is ready to save.", { maxWidth: 1600, maxHeight: 1200 });
   }
 
   async function saveHomeHeroImage() {

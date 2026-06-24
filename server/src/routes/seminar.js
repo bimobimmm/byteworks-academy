@@ -3,7 +3,7 @@ import { adminOnly, authMiddleware } from "../middleware/auth.js";
 
 const router = express.Router();
 const defaultRegistrationUrl = "https://discord.gg/PHaqJTz9H";
-const maxImageLength = 7_000_000;
+const maxImageLength = 2_800_000;
 
 function normalizeUrl(value) {
   return typeof value === "string" && value.trim() ? value.trim() : defaultRegistrationUrl;
@@ -25,7 +25,7 @@ function validateImageDataUrl(value, label) {
     throw error;
   }
   if (value.length > maxImageLength) {
-    const error = new Error(`${label} is too large. Please upload an image under 5 MB.`);
+    const error = new Error(`${label} is too large. Please upload a compressed image under 2 MB.`);
     error.status = 400;
     throw error;
   }
