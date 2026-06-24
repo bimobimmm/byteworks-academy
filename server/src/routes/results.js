@@ -1,8 +1,14 @@
 import express from "express";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
 import { authMiddleware, memberOnly } from "../middleware/auth.js";
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const certificateLogoPath = path.join(__dirname, "../assets/byteworks-logo-certificate.jpg");
 
 router.get("/me", authMiddleware, memberOnly, async (req, res) => {
   const results = await req.app.locals.db.all(`
@@ -92,11 +98,9 @@ function drawCertificate(doc, { result, certificateId, issuedDate }) {
   doc.fillColor(black).text(" ACADEMY");
   doc.fillColor(graphite).font("Helvetica").fontSize(15).text("Database Administrator Academy", 112, 121);
 
-  doc.circle(width - 150, 128, 52).lineWidth(10).stroke("#dedbd6");
-  doc.circle(width - 150, 128, 42).lineWidth(2).stroke(maroon);
-  doc.fillColor(red).font("Helvetica-Bold").fontSize(13).text("BYTEWORKS", width - 194, 108, { width: 88, align: "center" });
-  doc.fillColor(black).font("Helvetica").fontSize(10).text("Certified", width - 194, 130, { width: 88, align: "center" });
-  doc.fillColor(black).font("Helvetica-Bold").fontSize(13).text("Associate", width - 194, 149, { width: 88, align: "center" });
+  if (fs.existsSync(certificateLogoPath)) {
+    doc.image(certificateLogoPath, width - 247, 82, { fit: [162, 112], align: "center", valign: "center" });
+  }
 
   doc.fillColor(black).font("Times-Bold").fontSize(34).text("ByteWorks Certified Associate", 112, 188);
   doc.font("Times-Bold").fontSize(25).text("Certificate of Recognition", 112, 231);
