@@ -6,12 +6,12 @@ import { api } from "../lib/api.js";
 const paths = ["Oracle DBA", "MySQL DBA", "Microsoft SQL Server DBA", "PostgreSQL DBA"];
 
 export default function Home() {
-  const [homeHeroImage, setHomeHeroImage] = useState("");
+  const [homeHero, setHomeHero] = useState({ image: "", fit: "cover" });
 
   useEffect(() => {
     api("/seminar")
-      .then((data) => setHomeHeroImage(data.seminar?.home_hero_data_url || ""))
-      .catch(() => setHomeHeroImage(""));
+      .then((data) => setHomeHero({ image: data.seminar?.home_hero_data_url || "", fit: data.seminar?.home_hero_fit || "cover" }))
+      .catch(() => setHomeHero({ image: "", fit: "cover" }));
   }, []);
 
   return (
@@ -41,11 +41,11 @@ export default function Home() {
           </div>
 
           <div className="panel overflow-hidden">
-            {homeHeroImage ? (
+            {homeHero.image ? (
               <img
-                src={homeHeroImage}
+                src={homeHero.image}
                 alt="ByteWorks Academy homepage hero"
-                className="aspect-[4/3] h-full w-full bg-byte-ash object-cover lg:aspect-[1.07/1]"
+                className={`aspect-[4/3] h-full w-full bg-byte-ash ${homeHero.fit === "contain" ? "object-contain" : "object-cover"} lg:aspect-[1.07/1]`}
               />
             ) : (
               <div className="flex aspect-[4/3] min-h-[360px] flex-col items-center justify-center bg-byte-ash px-8 text-center lg:aspect-[1.07/1] lg:min-h-[520px]">

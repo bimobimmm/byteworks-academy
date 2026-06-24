@@ -144,12 +144,16 @@ async function migrateSqlite(db) {
     CREATE TABLE IF NOT EXISTS seminar_settings (
       id INTEGER PRIMARY KEY,
       poster_data_url TEXT NOT NULL DEFAULT '',
+      poster_fit TEXT NOT NULL DEFAULT 'cover',
       home_hero_data_url TEXT NOT NULL DEFAULT '',
+      home_hero_fit TEXT NOT NULL DEFAULT 'cover',
       registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
     );
   `);
 
   await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
+  await ensureColumn(db, "seminar_settings", "poster_fit", "TEXT NOT NULL DEFAULT 'cover'");
+  await ensureColumn(db, "seminar_settings", "home_hero_fit", "TEXT NOT NULL DEFAULT 'cover'");
   await db.run("INSERT OR IGNORE INTO seminar_settings (id) VALUES (1)");
 }
 
@@ -225,12 +229,16 @@ async function migratePostgres(db) {
     CREATE TABLE IF NOT EXISTS seminar_settings (
       id INTEGER PRIMARY KEY,
       poster_data_url TEXT NOT NULL DEFAULT '',
+      poster_fit TEXT NOT NULL DEFAULT 'cover',
       home_hero_data_url TEXT NOT NULL DEFAULT '',
+      home_hero_fit TEXT NOT NULL DEFAULT 'cover',
       registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
     );
   `);
 
   await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
+  await ensureColumn(db, "seminar_settings", "poster_fit", "TEXT NOT NULL DEFAULT 'cover'");
+  await ensureColumn(db, "seminar_settings", "home_hero_fit", "TEXT NOT NULL DEFAULT 'cover'");
   await db.run("INSERT INTO seminar_settings (id) VALUES (?) ON CONFLICT (id) DO NOTHING", 1);
 }
 

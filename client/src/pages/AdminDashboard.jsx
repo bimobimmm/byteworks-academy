@@ -6,7 +6,7 @@ const emptyCourse = { title: "", slug: "", description: "", level: "Beginner", d
 const emptyLesson = { title: "", content: "", order_number: 1 };
 const emptyExam = { course_id: "", title: "", passing_score: 75 };
 const emptyQuestion = { question: "", option_a: "", option_b: "", option_c: "", option_d: "", correct_answer: "A" };
-const emptySeminar = { poster_data_url: "", home_hero_data_url: "", registration_url: "https://discord.gg/PHaqJTz9H" };
+const emptySeminar = { poster_data_url: "", poster_fit: "cover", home_hero_data_url: "", home_hero_fit: "cover", registration_url: "https://discord.gg/PHaqJTz9H" };
 
 export default function AdminDashboard() {
   const [courses, setCourses] = useState([]);
@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [seminarForm, setSeminarForm] = useState(emptySeminar);
   const [seminarStatus, setSeminarStatus] = useState("");
+  const [imageChanges, setImageChanges] = useState({ homeHero: false, poster: false });
 
   async function load() {
     const [courseData, examData, seminarData] = await Promise.all([
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
     setCourses(courseData.courses);
     setExams(examData.exams);
     setSeminarForm(seminarData.seminar || emptySeminar);
+    setImageChanges({ homeHero: false, poster: false });
 
     if (!selectedCourseId && courseData.courses[0]) setSelectedCourseId(String(courseData.courses[0].id));
     if (!selectedExamId && examData.exams[0]) setSelectedExamId(String(examData.exams[0].id));
@@ -162,6 +164,7 @@ export default function AdminDashboard() {
     const reader = new FileReader();
     reader.onload = () => {
       setSeminarForm((current) => ({ ...current, [fieldName]: reader.result }));
+      setImageChanges((current) => ({ ...current, [fieldName === "home_hero_data_url" ? "homeHero" : "poster"]: true }));
       setSeminarStatus(readyMessage);
     };
     reader.readAsDataURL(file);
@@ -177,25 +180,31 @@ export default function AdminDashboard() {
 
   async function saveHomeHeroImage() {
     setSeminarStatus("Saving homepage hero image...");
+    const payload = { home_hero_fit: seminarForm.home_hero_fit };
+    if (imageChanges.homeHero) payload.home_hero_data_url = seminarForm.home_hero_data_url;
     const data = await api("/seminar", {
       method: "PUT",
-      body: JSON.stringify({ home_hero_data_url: seminarForm.home_hero_data_url })
+      body: JSON.stringify(payload)
     });
     setSeminarForm(data.seminar);
+    setImageChanges((current) => ({ ...current, homeHero: false }));
     setSeminarStatus("Homepage hero image updated.");
   }
 
   async function saveSeminar(event) {
     event.preventDefault();
     setSeminarStatus("Saving seminar page...");
+    const payload = {
+      poster_fit: seminarForm.poster_fit,
+      registration_url: seminarForm.registration_url
+    };
+    if (imageChanges.poster) payload.poster_data_url = seminarForm.poster_data_url;
     const data = await api("/seminar", {
       method: "PUT",
-      body: JSON.stringify({
-        poster_data_url: seminarForm.poster_data_url,
-        registration_url: seminarForm.registration_url
-      })
+      body: JSON.stringify(payload)
     });
     setSeminarForm(data.seminar);
+    setImageChanges((current) => ({ ...current, poster: false }));
     setSeminarStatus("Seminar page updated.");
   }
 
@@ -206,6 +215,7 @@ export default function AdminDashboard() {
       body: JSON.stringify({ registration_url: seminarForm.registration_url, remove_poster: true })
     });
     setSeminarForm(data.seminar);
+    setImageChanges((current) => ({ ...current, poster: false }));
     setSeminarStatus("Poster removed.");
   }
 
@@ -216,6 +226,7 @@ export default function AdminDashboard() {
       body: JSON.stringify({ registration_url: seminarForm.registration_url, remove_home_hero: true })
     });
     setSeminarForm(data.seminar);
+    setImageChanges((current) => ({ ...current, homeHero: false }));
     setSeminarStatus("Homepage hero image removed.");
   }
 
@@ -243,7 +254,7 @@ export default function AdminDashboard() {
             <h3 className="text-lg font-black">Homepage Hero Image</h3>
             <div className="overflow-hidden rounded-md border border-byte-line bg-byte-ash">
               {seminarForm.home_hero_data_url ? (
-                <img className="aspect-[4/3] w-full object-cover" src={seminarForm.home_hero_data_url} alt="Preview homepage hero" />
+                <img className={`aspect-[4/3] w-full ${seminarForm.home_hero_fit === "contain" ? "object-contain" : "object-cover"}`} src={seminarForm.home_hero_data_url} alt="Preview homepage hero" />
               ) : (
                 <div className="flex aspect-[4/3] min-h-60 flex-col items-center justify-center px-6 text-center">
                   <ImageUp className="text-byte-maroon" size={38} />
@@ -255,6 +266,13 @@ export default function AdminDashboard() {
               Homepage hero
               <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleHomeHeroImage} />
             </label>
+            <label className="grid gap-2 text-sm font-bold">
+              Hero image sizing
+              <select className="field" value={seminarForm.home_hero_fit || "cover"} onChange={(event) => setSeminarForm({ ...seminarForm, home_hero_fit: event.target.value })}>
+                <option value="cover">Fill frame</option>
+                <option value="contain">Fit full image</option>
+              </select>
+            </label>
             <div className="flex flex-col gap-3 sm:flex-row">
               <button className="btn-primary" type="button" onClick={saveHomeHeroImage}><Save size={18} />Save Hero Image</button>
               <button className="btn-secondary" type="button" onClick={removeHomeHeroImage}><X size={18} />Remove Hero Image</button>
@@ -263,7 +281,7 @@ export default function AdminDashboard() {
 
           <div className="overflow-hidden rounded-md border border-byte-line bg-byte-ash">
             {seminarForm.poster_data_url ? (
-              <img className="aspect-[4/5] w-full object-cover" src={seminarForm.poster_data_url} alt="Preview poster seminar" />
+              <img className={`aspect-[4/5] w-full ${seminarForm.poster_fit === "contain" ? "object-contain" : "object-cover"}`} src={seminarForm.poster_data_url} alt="Preview poster seminar" />
             ) : (
               <div className="flex aspect-[4/5] min-h-72 flex-col items-center justify-center px-6 text-center">
                 <ImageUp className="text-byte-maroon" size={38} />
@@ -277,6 +295,13 @@ export default function AdminDashboard() {
             <label className="grid gap-2 text-sm font-bold">
               Seminar poster
               <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSeminarPoster} />
+            </label>
+            <label className="grid gap-2 text-sm font-bold">
+              Poster image sizing
+              <select className="field" value={seminarForm.poster_fit || "cover"} onChange={(event) => setSeminarForm({ ...seminarForm, poster_fit: event.target.value })}>
+                <option value="cover">Fill frame</option>
+                <option value="contain">Fit full image</option>
+              </select>
             </label>
             <label className="grid gap-2 text-sm font-bold">
               Registration link

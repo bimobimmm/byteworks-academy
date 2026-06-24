@@ -9,6 +9,10 @@ function normalizeUrl(value) {
   return typeof value === "string" && value.trim() ? value.trim() : defaultRegistrationUrl;
 }
 
+function normalizeFit(value) {
+  return value === "contain" ? "contain" : "cover";
+}
+
 function validateImageDataUrl(value, label) {
   if (!value) return null;
   if (typeof value !== "string") {
@@ -30,10 +34,12 @@ function validateImageDataUrl(value, label) {
 }
 
 async function getSeminarSettings(db) {
-  const settings = await db.get("SELECT poster_data_url, home_hero_data_url, registration_url FROM seminar_settings WHERE id = 1");
+  const settings = await db.get("SELECT poster_data_url, poster_fit, home_hero_data_url, home_hero_fit, registration_url FROM seminar_settings WHERE id = 1");
   return {
     poster_data_url: settings?.poster_data_url || "",
+    poster_fit: normalizeFit(settings?.poster_fit),
     home_hero_data_url: settings?.home_hero_data_url || "",
+    home_hero_fit: normalizeFit(settings?.home_hero_fit),
     registration_url: normalizeUrl(settings?.registration_url)
   };
 }
@@ -51,6 +57,16 @@ router.put("/", authMiddleware, adminOnly, async (req, res) => {
   if (req.body.registration_url !== undefined) {
     updates.push("registration_url = ?");
     params.push(normalizeUrl(req.body.registration_url));
+  }
+
+  if (req.body.poster_fit !== undefined) {
+    updates.push("poster_fit = ?");
+    params.push(normalizeFit(req.body.poster_fit));
+  }
+
+  if (req.body.home_hero_fit !== undefined) {
+    updates.push("home_hero_fit = ?");
+    params.push(normalizeFit(req.body.home_hero_fit));
   }
 
   if (req.body.remove_poster) {
