@@ -175,10 +175,26 @@ export default function AdminDashboard() {
     handleImageUpload(event, "home_hero_data_url", "Homepage hero image is ready to save.");
   }
 
+  async function saveHomeHeroImage() {
+    setSeminarStatus("Saving homepage hero image...");
+    const data = await api("/seminar", {
+      method: "PUT",
+      body: JSON.stringify({ home_hero_data_url: seminarForm.home_hero_data_url })
+    });
+    setSeminarForm(data.seminar);
+    setSeminarStatus("Homepage hero image updated.");
+  }
+
   async function saveSeminar(event) {
     event.preventDefault();
-    setSeminarStatus("Saving...");
-    const data = await api("/seminar", { method: "PUT", body: JSON.stringify(seminarForm) });
+    setSeminarStatus("Saving seminar page...");
+    const data = await api("/seminar", {
+      method: "PUT",
+      body: JSON.stringify({
+        poster_data_url: seminarForm.poster_data_url,
+        registration_url: seminarForm.registration_url
+      })
+    });
     setSeminarForm(data.seminar);
     setSeminarStatus("Seminar page updated.");
   }
@@ -239,7 +255,10 @@ export default function AdminDashboard() {
               Homepage hero
               <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleHomeHeroImage} />
             </label>
-            <button className="btn-secondary w-fit" type="button" onClick={removeHomeHeroImage}><X size={18} />Remove Hero Image</button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button className="btn-primary" type="button" onClick={saveHomeHeroImage}><Save size={18} />Save Hero Image</button>
+              <button className="btn-secondary" type="button" onClick={removeHomeHeroImage}><X size={18} />Remove Hero Image</button>
+            </div>
           </div>
 
           <div className="overflow-hidden rounded-md border border-byte-line bg-byte-ash">
