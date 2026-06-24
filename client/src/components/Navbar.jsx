@@ -57,6 +57,7 @@ export default function Navbar() {
                       <Link className="block px-3 py-2 text-sm font-semibold hover:bg-byte-ash" to="/admin" onClick={() => setAdminMenuOpen(false)}>Dashboard Editor</Link>
                       <Link className="block px-3 py-2 text-sm font-semibold hover:bg-byte-ash" to="/admin/members" onClick={() => setAdminMenuOpen(false)}>Members</Link>
                       <Link className="block px-3 py-2 text-sm font-semibold hover:bg-byte-ash" to="/admin/results" onClick={() => setAdminMenuOpen(false)}>Exam Results</Link>
+                      <Link className="block px-3 py-2 text-sm font-semibold hover:bg-byte-ash" to="/admin/certificates" onClick={() => setAdminMenuOpen(false)}>Certificates</Link>
                     </div>
                   )}
                 </div>
@@ -83,6 +84,7 @@ export default function Navbar() {
                 <Link to="/admin" onClick={() => setOpen(false)}>Admin Dashboard Editor</Link>
                 <Link to="/admin/members" onClick={() => setOpen(false)}>Admin Members</Link>
                 <Link to="/admin/results" onClick={() => setOpen(false)}>Admin Exam Results</Link>
+                <Link to="/admin/certificates" onClick={() => setOpen(false)}>Admin Certificates</Link>
               </>
             )}
             {user ? <button className="btn-primary" onClick={handleLogout}>Logout</button> : <Link className="btn-primary" to="/login">Login</Link>}

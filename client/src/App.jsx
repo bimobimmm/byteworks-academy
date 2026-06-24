@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminMembers from "./pages/AdminMembers.jsx";
 import AdminResults from "./pages/AdminResults.jsx";
+import AdminCertificates from "./pages/AdminCertificates.jsx";
 import Locked from "./pages/Locked.jsx";
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/members" element={<AdminRoute><AdminMembers /></AdminRoute>} />
           <Route path="/admin/results" element={<AdminRoute><AdminResults /></AdminRoute>} />
+          <Route path="/admin/certificates" element={<AdminRoute><AdminCertificates /></AdminRoute>} />
         </Routes>
       </main>
       <Footer />

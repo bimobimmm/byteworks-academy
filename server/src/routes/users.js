@@ -1,4 +1,5 @@
 import express from "express";
+import { buildCertificateId, createCertificatePdf } from "../lib/certificate.js";
 import { adminOnly, authMiddleware } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -14,6 +15,56 @@ router.get("/", authMiddleware, adminOnly, async (req, res) => {
     ORDER BY exam_results.created_at DESC
   `);
   res.json({ users, results });
+});
+
+router.get("/certificates", authMiddleware, adminOnly, async (req, res) => {
+  const certificates = await req.app.locals.db.all(`
+    SELECT
+      exam_results.*,
+      users.name as user_name,
+      users.email as user_email,
+      exams.title as exam_title,
+      courses.title as course_title
+    FROM exam_results
+    JOIN users ON users.id = exam_results.user_id
+    JOIN exams ON exams.id = exam_results.exam_id
+    LEFT JOIN courses ON courses.id = exams.course_id
+    WHERE exam_results.passed = 1
+    ORDER BY exam_results.created_at DESC
+  `);
+
+  res.json({
+    certificates: certificates.map((certificate) => ({
+      ...certificate,
+      certificate_id: buildCertificateId(certificate)
+    }))
+  });
+});
+
+router.get("/results/:id/certificate", authMiddleware, adminOnly, async (req, res) => {
+  const result = await req.app.locals.db.get(`
+    SELECT
+      exam_results.*,
+      users.name as user_name,
+      users.email as user_email,
+      exams.title as exam_title,
+      courses.title as course_title
+    FROM exam_results
+    JOIN users ON users.id = exam_results.user_id
+    JOIN exams ON exams.id = exam_results.exam_id
+    LEFT JOIN courses ON courses.id = exams.course_id
+    WHERE exam_results.id = ? AND exam_results.passed = 1
+  `, req.params.id);
+
+  if (!result) return res.status(404).json({ message: "Certificate not found" });
+
+  const certificateId = buildCertificateId(result);
+  const pdfBuffer = await createCertificatePdf({ result, certificateId, issuedDate: new Date(result.created_at) });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${certificateId}.pdf"`);
+  res.setHeader("Content-Length", pdfBuffer.length);
+  res.send(pdfBuffer);
 });
 
 router.put("/:id", authMiddleware, adminOnly, async (req, res) => {
