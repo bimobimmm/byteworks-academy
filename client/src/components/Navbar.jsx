@@ -7,6 +7,7 @@ const navItems = [
   ["Home", "/"],
   ["About", "/about"],
   ["Courses", "/courses"],
+  ["Seminar", "/seminar"],
   ["Exams", "/exams"]
 ];
 

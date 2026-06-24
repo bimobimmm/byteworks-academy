@@ -1,4 +1,4 @@
-import { Plus, Save, Trash2 } from "lucide-react";
+import { ImageUp, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 
@@ -6,6 +6,7 @@ const emptyCourse = { title: "", slug: "", description: "", level: "Beginner", d
 const emptyLesson = { title: "", content: "", order_number: 1 };
 const emptyExam = { course_id: "", title: "", passing_score: 75 };
 const emptyQuestion = { question: "", option_a: "", option_b: "", option_c: "", option_d: "", correct_answer: "A" };
+const emptySeminar = { poster_data_url: "", registration_url: "https://discord.gg/PHaqJTz9H" };
 
 export default function AdminDashboard() {
   const [courses, setCourses] = useState([]);
@@ -20,14 +21,18 @@ export default function AdminDashboard() {
   const [selectedExam, setSelectedExam] = useState(null);
   const [questionForm, setQuestionForm] = useState(emptyQuestion);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
+  const [seminarForm, setSeminarForm] = useState(emptySeminar);
+  const [seminarStatus, setSeminarStatus] = useState("");
 
   async function load() {
-    const [courseData, examData] = await Promise.all([
+    const [courseData, examData, seminarData] = await Promise.all([
       api("/courses/admin/all"),
-      api("/exams/admin/all")
+      api("/exams/admin/all"),
+      api("/seminar")
     ]);
     setCourses(courseData.courses);
     setExams(examData.exams);
+    setSeminarForm(seminarData.seminar || emptySeminar);
 
     if (!selectedCourseId && courseData.courses[0]) setSelectedCourseId(String(courseData.courses[0].id));
     if (!selectedExamId && examData.exams[0]) setSelectedExamId(String(examData.exams[0].id));
@@ -146,6 +151,40 @@ export default function AdminDashboard() {
     await load();
   }
 
+  function handleSeminarPoster(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setSeminarStatus("Poster maksimal 5 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSeminarForm((current) => ({ ...current, poster_data_url: reader.result }));
+      setSeminarStatus("Poster siap disimpan.");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveSeminar(event) {
+    event.preventDefault();
+    setSeminarStatus("Saving...");
+    const data = await api("/seminar", { method: "PUT", body: JSON.stringify(seminarForm) });
+    setSeminarForm(data.seminar);
+    setSeminarStatus("Seminar page updated.");
+  }
+
+  async function removeSeminarPoster() {
+    setSeminarStatus("Removing poster...");
+    const data = await api("/seminar", {
+      method: "PUT",
+      body: JSON.stringify({ registration_url: seminarForm.registration_url, remove_poster: true })
+    });
+    setSeminarForm(data.seminar);
+    setSeminarStatus("Poster removed.");
+  }
+
   return (
     <section className="section py-16">
       <p className="text-sm font-bold uppercase tracking-[0.2em] text-byte-maroon">Admin</p>
@@ -153,6 +192,52 @@ export default function AdminDashboard() {
       <p className="mt-4 max-w-3xl text-sm leading-6 text-byte-graphite">
         Manage course metadata, learning material, certification exams, passing score, and exam questions.
       </p>
+
+      <section className="panel mt-10 p-6">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+          <div>
+            <h2 className="text-2xl font-black">Seminar Page</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-byte-graphite">
+              Upload poster seminar dan atur link pendaftaran yang tampil di halaman publik.
+            </p>
+          </div>
+          <a className="btn-secondary py-2" href="/seminar" target="_blank" rel="noreferrer">Open Seminar Page</a>
+        </div>
+
+        <form className="mt-6 grid gap-6 lg:grid-cols-[0.72fr_1.28fr]" onSubmit={saveSeminar}>
+          <div className="overflow-hidden rounded-md border border-byte-line bg-byte-ash">
+            {seminarForm.poster_data_url ? (
+              <img className="aspect-[4/5] w-full object-cover" src={seminarForm.poster_data_url} alt="Preview poster seminar" />
+            ) : (
+              <div className="flex aspect-[4/5] min-h-72 flex-col items-center justify-center px-6 text-center">
+                <ImageUp className="text-byte-maroon" size={38} />
+                <p className="mt-4 text-sm font-bold text-byte-black">No poster uploaded</p>
+              </div>
+            )}
+          </div>
+
+          <div className="grid content-start gap-4">
+            <label className="grid gap-2 text-sm font-bold">
+              Poster seminar
+              <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSeminarPoster} />
+            </label>
+            <label className="grid gap-2 text-sm font-bold">
+              Link pendaftaran
+              <input
+                className="field"
+                placeholder="https://discord.gg/PHaqJTz9H"
+                value={seminarForm.registration_url}
+                onChange={(event) => setSeminarForm({ ...seminarForm, registration_url: event.target.value })}
+              />
+            </label>
+            {seminarStatus && <p className="text-sm font-semibold text-byte-maroon">{seminarStatus}</p>}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button className="btn-primary" type="submit"><Save size={18} />Save Seminar Page</button>
+              <button className="btn-secondary" type="button" onClick={removeSeminarPoster}><X size={18} />Remove Poster</button>
+            </div>
+          </div>
+        </form>
+      </section>
 
       <div className="mt-10 grid gap-8 xl:grid-cols-2">
         <section className="panel p-6">

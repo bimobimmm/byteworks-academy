@@ -8,13 +8,14 @@ import examRoutes from "./routes/exams.js";
 import userRoutes from "./routes/users.js";
 import resultRoutes from "./routes/results.js";
 import monitorRoutes from "./routes/monitor.js";
+import seminarRoutes from "./routes/seminar.js";
 
 dotenv.config();
 
 const app = express();
 const clientOrigin = process.env.CLIENT_ORIGIN || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5173");
 
-app.use(express.json());
+app.use(express.json({ limit: "8mb" }));
 
 const db = await initDb();
 app.locals.db = db;
@@ -44,6 +45,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/results", resultRoutes);
+app.use("/api/seminar", seminarRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

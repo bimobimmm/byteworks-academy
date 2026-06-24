@@ -125,7 +125,15 @@ async function migrateSqlite(db) {
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY(exam_id) REFERENCES exams(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS seminar_settings (
+      id INTEGER PRIMARY KEY,
+      poster_data_url TEXT NOT NULL DEFAULT '',
+      registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
+    );
   `);
+
+  await db.run("INSERT OR IGNORE INTO seminar_settings (id) VALUES (1)");
 }
 
 async function migratePostgres(db) {
@@ -184,7 +192,15 @@ async function migratePostgres(db) {
       passed INTEGER NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS seminar_settings (
+      id INTEGER PRIMARY KEY,
+      poster_data_url TEXT NOT NULL DEFAULT '',
+      registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
+    );
   `);
+
+  await db.run("INSERT INTO seminar_settings (id) VALUES (?) ON CONFLICT (id) DO NOTHING", 1);
 }
 
 async function seed(db) {

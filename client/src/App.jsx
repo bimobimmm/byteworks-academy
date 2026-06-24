@@ -7,6 +7,7 @@ import Home from "./pages/Home.jsx";
 import About from "./pages/About.jsx";
 import Courses from "./pages/Courses.jsx";
 import CourseDetail from "./pages/CourseDetail.jsx";
+import Seminar from "./pages/Seminar.jsx";
 import Exams from "./pages/Exams.jsx";
 import ExamDetail from "./pages/ExamDetail.jsx";
 import Login from "./pages/Login.jsx";
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/courses" element={<Courses />} />
+          <Route path="/seminar" element={<Seminar />} />
           <Route path="/locked" element={<Locked />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
