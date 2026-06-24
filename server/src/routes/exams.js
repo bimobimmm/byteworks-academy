@@ -5,11 +5,18 @@ const router = express.Router();
 
 router.get("/", authMiddleware, memberOnly, async (req, res) => {
   const exams = await req.app.locals.db.all(`
-    SELECT exams.*, courses.title as course_title
+    SELECT
+      exams.*,
+      courses.title as course_title,
+      exam_results.id as latest_result_id,
+      exam_results.score as latest_score,
+      exam_results.passed as latest_passed,
+      exam_results.created_at as latest_result_at
     FROM exams
     LEFT JOIN courses ON courses.id = exams.course_id
+    LEFT JOIN exam_results ON exam_results.exam_id = exams.id AND exam_results.user_id = ?
     ORDER BY exams.id
-  `);
+  `, req.user.id);
   res.json({ exams });
 });
 
@@ -29,11 +36,16 @@ router.get("/:id", authMiddleware, memberOnly, async (req, res) => {
   const db = req.app.locals.db;
   const exam = await db.get("SELECT * FROM exams WHERE id = ?", req.params.id);
   if (!exam) return res.status(404).json({ message: "Exam not found" });
+  const latestResult = await db.get(
+    "SELECT id, score, passed, created_at FROM exam_results WHERE exam_id = ? AND user_id = ?",
+    req.params.id,
+    req.user.id
+  );
   const questions = await db.all(
     "SELECT id, question, option_a, option_b, option_c, option_d FROM questions WHERE exam_id = ? ORDER BY id",
     req.params.id
   );
-  res.json({ exam, questions });
+  res.json({ exam, questions, latestResult: latestResult || null });
 });
 
 router.get("/:id/admin", authMiddleware, adminOnly, async (req, res) => {
@@ -125,12 +137,28 @@ router.post("/:id/submit", authMiddleware, memberOnly, async (req, res) => {
   const exam = await db.get("SELECT * FROM exams WHERE id = ?", req.params.id);
   if (!exam) return res.status(404).json({ message: "Exam not found" });
 
+  const existingResult = await db.get(
+    "SELECT id, score, passed, created_at FROM exam_results WHERE exam_id = ? AND user_id = ?",
+    req.params.id,
+    req.user.id
+  );
+  if (Number(existingResult?.passed) === 1) {
+    return res.status(409).json({
+      message: "You already passed this exam. Download the certificate from your result page.",
+      resultId: existingResult.id,
+      score: existingResult.score,
+      passed: true,
+      passingScore: exam.passing_score
+    });
+  }
+
   const questions = await db.all("SELECT id, correct_answer FROM questions WHERE exam_id = ?", req.params.id);
+  if (!questions.length) return res.status(400).json({ message: "This exam has no questions yet" });
   const correct = questions.filter((question) => answers[question.id] === question.correct_answer).length;
   const score = Math.round((correct / questions.length) * 100);
   const passed = score >= exam.passing_score;
 
-  const savedResult = await db.run(
+  await db.run(
     `
       INSERT INTO exam_results (user_id, exam_id, score, passed)
       VALUES (?, ?, ?, ?)
@@ -138,15 +166,19 @@ router.post("/:id/submit", authMiddleware, memberOnly, async (req, res) => {
         score = excluded.score,
         passed = excluded.passed,
         created_at = CURRENT_TIMESTAMP
-      RETURNING id
     `,
     req.user.id,
     req.params.id,
     score,
     passed ? 1 : 0
   );
+  const savedResult = await db.get(
+    "SELECT id FROM exam_results WHERE exam_id = ? AND user_id = ?",
+    req.params.id,
+    req.user.id
+  );
 
-  res.json({ resultId: savedResult.lastID, score, passed, passingScore: exam.passing_score, total: questions.length, correct });
+  res.json({ resultId: savedResult.id, score, passed, passingScore: exam.passing_score, total: questions.length, correct });
 });
 
 export default router;

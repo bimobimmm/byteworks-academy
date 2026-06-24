@@ -1,5 +1,5 @@
 import express from "express";
-import { buildCertificateId, createCertificatePdf } from "../lib/certificate.js";
+import { buildCertificateId, createCertificatePdf, getCertificateSettings } from "../lib/certificate.js";
 import { authMiddleware, memberOnly } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -33,9 +33,10 @@ router.get("/:id/certificate", authMiddleware, memberOnly, async (req, res) => {
   if (!result) return res.status(404).json({ message: "Certificate result not found" });
   if (!Number(result.passed)) return res.status(403).json({ message: "Certificate is only available for passed exams" });
 
-  const certificateId = buildCertificateId(result);
+  const settings = await getCertificateSettings(db);
+  const certificateId = buildCertificateId(result, settings);
   const issuedDate = new Date(result.created_at);
-  const pdfBuffer = await createCertificatePdf({ result, certificateId, issuedDate });
+  const pdfBuffer = await createCertificatePdf({ result, certificateId, issuedDate, settings });
   const filename = `${certificateId}.pdf`;
 
   res.setHeader("Content-Type", "application/pdf");

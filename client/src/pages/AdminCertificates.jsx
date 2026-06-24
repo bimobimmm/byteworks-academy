@@ -1,13 +1,27 @@
-import { Award, Download, Search } from "lucide-react";
+import { Award, Download, ImageUp, Save, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api, apiBlob } from "../lib/api.js";
 
 export default function AdminCertificates() {
   const [certificates, setCertificates] = useState([]);
   const [query, setQuery] = useState("");
+  const [settings, setSettings] = useState({
+    issuer_name: "ByteWorks Academy",
+    issuer_title: "Authorized Certification Issuer",
+    certificate_prefix: "BW",
+    logo_data_url: "",
+    signature_data_url: ""
+  });
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
-    api("/users/certificates").then((data) => setCertificates(data.certificates));
+    Promise.all([
+      api("/users/certificates"),
+      api("/users/certificate-settings")
+    ]).then(([certificateData, settingsData]) => {
+      setCertificates(certificateData.certificates);
+      setSettings(settingsData.settings);
+    });
   }, []);
 
   const filteredCertificates = useMemo(() => {
@@ -32,6 +46,26 @@ export default function AdminCertificates() {
     URL.revokeObjectURL(url);
   }
 
+  function readImageFile(file, field) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setSettings((current) => ({ ...current, [field]: reader.result }));
+    reader.readAsDataURL(file);
+  }
+
+  async function saveSettings(event) {
+    event.preventDefault();
+    setStatus("Saving certificate settings...");
+    const data = await api("/users/certificate-settings", {
+      method: "PUT",
+      body: JSON.stringify(settings)
+    });
+    setSettings(data.settings);
+    const certificateData = await api("/users/certificates");
+    setCertificates(certificateData.certificates);
+    setStatus("Certificate settings saved.");
+  }
+
   return (
     <section className="section py-16">
       <p className="text-sm font-bold uppercase tracking-[0.2em] text-byte-maroon">Admin</p>
@@ -45,6 +79,46 @@ export default function AdminCertificates() {
         <Stat label="Certified members" value={new Set(certificates.map((item) => item.user_id)).size} />
         <Stat label="Average score" value={`${certificates.length ? Math.round(certificates.reduce((sum, item) => sum + item.score, 0) / certificates.length) : 0}%`} />
       </div>
+
+      <form className="panel mt-6 grid gap-6 p-6 lg:grid-cols-[1fr_1fr]" onSubmit={saveSettings}>
+        <div className="grid gap-4">
+          <div>
+            <h2 className="text-2xl font-black">Certificate Settings</h2>
+            <p className="mt-2 text-sm leading-6 text-byte-graphite">Customize the issuer, certificate ID prefix, logo, and signature used in generated member certificates.</p>
+          </div>
+          <label className="grid gap-2 text-sm font-bold">
+            Issuer name
+            <input className="field" value={settings.issuer_name} onChange={(event) => setSettings({ ...settings, issuer_name: event.target.value })} />
+          </label>
+          <label className="grid gap-2 text-sm font-bold">
+            Issuer title
+            <input className="field" value={settings.issuer_title} onChange={(event) => setSettings({ ...settings, issuer_title: event.target.value })} />
+          </label>
+          <label className="grid gap-2 text-sm font-bold">
+            Certificate prefix
+            <input className="field" value={settings.certificate_prefix} onChange={(event) => setSettings({ ...settings, certificate_prefix: event.target.value })} />
+          </label>
+          {status && <p className="text-sm font-semibold text-byte-maroon">{status}</p>}
+          <button className="btn-primary w-fit" type="submit"><Save size={18} />Save Certificate Settings</button>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <ImageSetting
+            label="Certificate logo"
+            image={settings.logo_data_url}
+            emptyText="Using default ByteWorks logo"
+            onUpload={(file) => readImageFile(file, "logo_data_url")}
+            onRemove={() => setSettings({ ...settings, logo_data_url: "" })}
+          />
+          <ImageSetting
+            label="Signature image"
+            image={settings.signature_data_url}
+            emptyText="Using generated signature line"
+            onUpload={(file) => readImageFile(file, "signature_data_url")}
+            onRemove={() => setSettings({ ...settings, signature_data_url: "" })}
+          />
+        </div>
+      </form>
 
       <div className="panel mt-6 p-5">
         <label className="relative block">
@@ -91,6 +165,26 @@ export default function AdminCertificates() {
         {!filteredCertificates.length && <div className="p-6 text-sm text-byte-graphite">No passed exam certificates found.</div>}
       </div>
     </section>
+  );
+}
+
+function ImageSetting({ label, image, emptyText, onUpload, onRemove }) {
+  return (
+    <div className="grid gap-3">
+      <p className="text-sm font-bold">{label}</p>
+      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md border border-byte-line bg-byte-ash p-4">
+        {image ? (
+          <img className="max-h-full max-w-full object-contain" src={image} alt={label} />
+        ) : (
+          <div className="text-center text-sm font-semibold text-byte-graphite">
+            <ImageUp className="mx-auto mb-3 text-byte-maroon" size={32} />
+            {emptyText}
+          </div>
+        )}
+      </div>
+      <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => onUpload(event.target.files?.[0])} />
+      <button className="btn-secondary w-fit py-2 text-xs" type="button" onClick={onRemove}><X size={15} />Remove</button>
+    </div>
   );
 }
 

@@ -1,8 +1,19 @@
 import express from "express";
-import { buildCertificateId, createCertificatePdf } from "../lib/certificate.js";
+import { buildCertificateId, createCertificatePdf, getCertificateSettings, normalizeCertificateSettings } from "../lib/certificate.js";
 import { adminOnly, authMiddleware } from "../middleware/auth.js";
 
 const router = express.Router();
+
+function validateOptionalImageDataUrl(value, label) {
+  if (!value) return "";
+  if (typeof value !== "string" || !/^data:image\/(png|jpe?g|webp);base64,/i.test(value)) {
+    return { error: `${label} must be a PNG, JPG, or WebP image` };
+  }
+  if (value.length > 2_500_000) {
+    return { error: `${label} is too large. Please upload an image below 2 MB.` };
+  }
+  return value;
+}
 
 router.get("/", authMiddleware, adminOnly, async (req, res) => {
   const db = req.app.locals.db;
@@ -18,7 +29,9 @@ router.get("/", authMiddleware, adminOnly, async (req, res) => {
 });
 
 router.get("/certificates", authMiddleware, adminOnly, async (req, res) => {
-  const certificates = await req.app.locals.db.all(`
+  const db = req.app.locals.db;
+  const settings = await getCertificateSettings(db);
+  const certificates = await db.all(`
     SELECT
       exam_results.*,
       users.name as user_name,
@@ -36,13 +49,46 @@ router.get("/certificates", authMiddleware, adminOnly, async (req, res) => {
   res.json({
     certificates: certificates.map((certificate) => ({
       ...certificate,
-      certificate_id: buildCertificateId(certificate)
+      certificate_id: buildCertificateId(certificate, settings)
     }))
   });
 });
 
+router.get("/certificate-settings", authMiddleware, adminOnly, async (req, res) => {
+  const settings = await getCertificateSettings(req.app.locals.db);
+  res.json({ settings });
+});
+
+router.put("/certificate-settings", authMiddleware, adminOnly, async (req, res) => {
+  const logoDataUrl = validateOptionalImageDataUrl(req.body?.logo_data_url, "Certificate logo");
+  if (logoDataUrl?.error) return res.status(400).json({ message: logoDataUrl.error });
+  const signatureDataUrl = validateOptionalImageDataUrl(req.body?.signature_data_url, "Signature image");
+  if (signatureDataUrl?.error) return res.status(400).json({ message: signatureDataUrl.error });
+
+  const settings = normalizeCertificateSettings({
+    ...(req.body || {}),
+    logo_data_url: logoDataUrl,
+    signature_data_url: signatureDataUrl
+  });
+  const db = req.app.locals.db;
+  await db.run(
+    `
+      UPDATE certificate_settings
+      SET issuer_name = ?, issuer_title = ?, certificate_prefix = ?, logo_data_url = ?, signature_data_url = ?
+      WHERE id = 1
+    `,
+    settings.issuer_name,
+    settings.issuer_title,
+    settings.certificate_prefix,
+    settings.logo_data_url,
+    settings.signature_data_url
+  );
+  res.json({ settings: await getCertificateSettings(db) });
+});
+
 router.get("/results/:id/certificate", authMiddleware, adminOnly, async (req, res) => {
-  const result = await req.app.locals.db.get(`
+  const db = req.app.locals.db;
+  const result = await db.get(`
     SELECT
       exam_results.*,
       users.name as user_name,
@@ -58,8 +104,9 @@ router.get("/results/:id/certificate", authMiddleware, adminOnly, async (req, re
 
   if (!result) return res.status(404).json({ message: "Certificate not found" });
 
-  const certificateId = buildCertificateId(result);
-  const pdfBuffer = await createCertificatePdf({ result, certificateId, issuedDate: new Date(result.created_at) });
+  const settings = await getCertificateSettings(db);
+  const certificateId = buildCertificateId(result, settings);
+  const pdfBuffer = await createCertificatePdf({ result, certificateId, issuedDate: new Date(result.created_at), settings });
 
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `attachment; filename="${certificateId}.pdf"`);

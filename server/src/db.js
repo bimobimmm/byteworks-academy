@@ -162,6 +162,15 @@ async function migrateSqlite(db) {
       home_hero_position TEXT NOT NULL DEFAULT 'center',
       registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
     );
+
+    CREATE TABLE IF NOT EXISTS certificate_settings (
+      id INTEGER PRIMARY KEY,
+      issuer_name TEXT NOT NULL DEFAULT 'ByteWorks Academy',
+      issuer_title TEXT NOT NULL DEFAULT 'Authorized Certification Issuer',
+      certificate_prefix TEXT NOT NULL DEFAULT 'BW',
+      logo_data_url TEXT NOT NULL DEFAULT '',
+      signature_data_url TEXT NOT NULL DEFAULT ''
+    );
   `);
 
   await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
@@ -172,6 +181,7 @@ async function migrateSqlite(db) {
   await dedupeExamResultsSqlite(db);
   await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_results_user_exam ON exam_results (user_id, exam_id)");
   await db.run("INSERT OR IGNORE INTO seminar_settings (id) VALUES (1)");
+  await db.run("INSERT OR IGNORE INTO certificate_settings (id) VALUES (1)");
 }
 
 async function migratePostgres(db) {
@@ -261,6 +271,15 @@ async function migratePostgres(db) {
       home_hero_position TEXT NOT NULL DEFAULT 'center',
       registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
     );
+
+    CREATE TABLE IF NOT EXISTS certificate_settings (
+      id INTEGER PRIMARY KEY,
+      issuer_name TEXT NOT NULL DEFAULT 'ByteWorks Academy',
+      issuer_title TEXT NOT NULL DEFAULT 'Authorized Certification Issuer',
+      certificate_prefix TEXT NOT NULL DEFAULT 'BW',
+      logo_data_url TEXT NOT NULL DEFAULT '',
+      signature_data_url TEXT NOT NULL DEFAULT ''
+    );
   `);
 
   await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
@@ -271,6 +290,7 @@ async function migratePostgres(db) {
   await dedupeExamResultsPostgres(db);
   await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_results_user_exam ON exam_results (user_id, exam_id)");
   await db.run("INSERT INTO seminar_settings (id) VALUES (?) ON CONFLICT (id) DO NOTHING", 1);
+  await db.run("INSERT INTO certificate_settings (id) VALUES (?) ON CONFLICT (id) DO NOTHING", 1);
 }
 
 async function dedupeExamResultsSqlite(db) {
