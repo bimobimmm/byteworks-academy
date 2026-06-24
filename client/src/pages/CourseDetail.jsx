@@ -14,12 +14,8 @@ export default function CourseDetail() {
     api(`/courses/${id}`).then((response) => {
       setData(response);
       setActiveLessonId(response.lessons[0]?.id || null);
-      const saved = localStorage.getItem(`byteworks_course_work_${id}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setLessonWork(parsed.lessonWork || {});
-        setCompletedLessons(parsed.completedLessons || []);
-      }
+      setLessonWork(response.progress?.lessonWork || {});
+      setCompletedLessons(response.progress?.completedLessonIds || []);
     });
   }, [id]);
 
@@ -32,17 +28,21 @@ export default function CourseDetail() {
   const checkedCount = practiceTasks.filter((task) => currentWork.checked?.[task]).length;
   const canComplete = currentWork.saved && currentWork.notes.trim().length >= 20 && checkedCount === practiceTasks.length;
 
-  function persist(nextLessonWork, nextCompletedLessons = completedLessons) {
-    localStorage.setItem(
-      `byteworks_course_work_${id}`,
-      JSON.stringify({ lessonWork: nextLessonWork, completedLessons: nextCompletedLessons })
-    );
+  async function persistLessonProgress(lessonId, work, completed) {
+    await api(`/courses/${id}/progress/${lessonId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        notes: work.notes,
+        checked: work.checked || {},
+        saved: work.saved,
+        completed
+      })
+    });
   }
 
   function updateCurrentWork(nextWork) {
     const nextLessonWork = { ...lessonWork, [activeLesson.id]: nextWork };
     setLessonWork(nextLessonWork);
-    persist(nextLessonWork);
   }
 
   function toggleTask(task) {
@@ -56,15 +56,17 @@ export default function CourseDetail() {
     });
   }
 
-  function saveWork() {
-    updateCurrentWork({ ...currentWork, saved: true });
+  async function saveWork() {
+    const nextWork = { ...currentWork, saved: true };
+    updateCurrentWork(nextWork);
+    await persistLessonProgress(activeLesson.id, nextWork, completedLessons.includes(activeLesson.id));
   }
 
-  function markComplete() {
+  async function markComplete() {
     if (!activeLesson || completedLessons.includes(activeLesson.id) || !canComplete) return;
     const nextCompletedLessons = [...completedLessons, activeLesson.id];
     setCompletedLessons(nextCompletedLessons);
-    persist(lessonWork, nextCompletedLessons);
+    await persistLessonProgress(activeLesson.id, currentWork, true);
   }
 
   return (

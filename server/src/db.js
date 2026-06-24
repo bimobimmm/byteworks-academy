@@ -126,6 +126,21 @@ async function migrateSqlite(db) {
       FOREIGN KEY(exam_id) REFERENCES exams(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS lesson_progress (
+      user_id INTEGER NOT NULL,
+      course_id INTEGER NOT NULL,
+      lesson_id INTEGER NOT NULL,
+      notes TEXT NOT NULL DEFAULT '',
+      checked_json TEXT NOT NULL DEFAULT '{}',
+      saved INTEGER NOT NULL DEFAULT 0,
+      completed INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(user_id, lesson_id),
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE,
+      FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS seminar_settings (
       id INTEGER PRIMARY KEY,
       poster_data_url TEXT NOT NULL DEFAULT '',
@@ -193,6 +208,18 @@ async function migratePostgres(db) {
       score INTEGER NOT NULL,
       passed INTEGER NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS lesson_progress (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+      lesson_id INTEGER NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+      notes TEXT NOT NULL DEFAULT '',
+      checked_json TEXT NOT NULL DEFAULT '{}',
+      saved INTEGER NOT NULL DEFAULT 0,
+      completed INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY(user_id, lesson_id)
     );
 
     CREATE TABLE IF NOT EXISTS seminar_settings (
