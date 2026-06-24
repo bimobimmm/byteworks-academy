@@ -6,7 +6,23 @@ const emptyCourse = { title: "", slug: "", description: "", level: "Beginner", d
 const emptyLesson = { title: "", content: "", order_number: 1 };
 const emptyExam = { course_id: "", title: "", passing_score: 75 };
 const emptyQuestion = { question: "", option_a: "", option_b: "", option_c: "", option_d: "", correct_answer: "A" };
-const emptySeminar = { poster_data_url: "", poster_fit: "cover", home_hero_data_url: "", home_hero_fit: "cover", registration_url: "https://discord.gg/PHaqJTz9H" };
+const emptySeminar = {
+  poster_data_url: "",
+  poster_fit: "cover",
+  poster_position: "center",
+  home_hero_data_url: "",
+  home_hero_fit: "cover",
+  home_hero_position: "center",
+  registration_url: "https://discord.gg/PHaqJTz9H"
+};
+
+const imagePositions = [
+  ["center", "Center"],
+  ["top", "Top"],
+  ["bottom", "Bottom"],
+  ["left", "Left"],
+  ["right", "Right"]
+];
 
 export default function AdminDashboard() {
   const [courses, setCourses] = useState([]);
@@ -180,7 +196,7 @@ export default function AdminDashboard() {
 
   async function saveHomeHeroImage() {
     setSeminarStatus("Saving homepage hero image...");
-    const payload = { home_hero_fit: seminarForm.home_hero_fit };
+    const payload = { home_hero_fit: seminarForm.home_hero_fit, home_hero_position: seminarForm.home_hero_position };
     if (imageChanges.homeHero) payload.home_hero_data_url = seminarForm.home_hero_data_url;
     const data = await api("/seminar", {
       method: "PUT",
@@ -196,6 +212,7 @@ export default function AdminDashboard() {
     setSeminarStatus("Saving seminar page...");
     const payload = {
       poster_fit: seminarForm.poster_fit,
+      poster_position: seminarForm.poster_position,
       registration_url: seminarForm.registration_url
     };
     if (imageChanges.poster) payload.poster_data_url = seminarForm.poster_data_url;
@@ -254,7 +271,12 @@ export default function AdminDashboard() {
             <h3 className="text-lg font-black">Homepage Hero Image</h3>
             <div className="overflow-hidden rounded-md border border-byte-line bg-byte-ash">
               {seminarForm.home_hero_data_url ? (
-                <img className={`aspect-[4/3] w-full ${seminarForm.home_hero_fit === "contain" ? "object-contain" : "object-cover"}`} src={seminarForm.home_hero_data_url} alt="Preview homepage hero" />
+                <img
+                  className={`aspect-[4/3] w-full ${seminarForm.home_hero_fit === "contain" ? "object-contain" : "object-cover"}`}
+                  style={{ objectPosition: seminarForm.home_hero_position || "center" }}
+                  src={seminarForm.home_hero_data_url}
+                  alt="Preview homepage hero"
+                />
               ) : (
                 <div className="flex aspect-[4/3] min-h-60 flex-col items-center justify-center px-6 text-center">
                   <ImageUp className="text-byte-maroon" size={38} />
@@ -273,6 +295,12 @@ export default function AdminDashboard() {
                 <option value="contain">Fit full image</option>
               </select>
             </label>
+            <label className="grid gap-2 text-sm font-bold">
+              Hero crop position
+              <select className="field" value={seminarForm.home_hero_position || "center"} onChange={(event) => setSeminarForm({ ...seminarForm, home_hero_position: event.target.value })}>
+                {imagePositions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
             <div className="flex flex-col gap-3 sm:flex-row">
               <button className="btn-primary" type="button" onClick={saveHomeHeroImage}><Save size={18} />Save Hero Image</button>
               <button className="btn-secondary" type="button" onClick={removeHomeHeroImage}><X size={18} />Remove Hero Image</button>
@@ -281,7 +309,12 @@ export default function AdminDashboard() {
 
           <div className="overflow-hidden rounded-md border border-byte-line bg-byte-ash">
             {seminarForm.poster_data_url ? (
-              <img className={`aspect-[4/5] w-full ${seminarForm.poster_fit === "contain" ? "object-contain" : "object-cover"}`} src={seminarForm.poster_data_url} alt="Preview poster seminar" />
+              <img
+                className={`aspect-[4/5] w-full ${seminarForm.poster_fit === "contain" ? "object-contain" : "object-cover"}`}
+                style={{ objectPosition: seminarForm.poster_position || "center" }}
+                src={seminarForm.poster_data_url}
+                alt="Preview poster seminar"
+              />
             ) : (
               <div className="flex aspect-[4/5] min-h-72 flex-col items-center justify-center px-6 text-center">
                 <ImageUp className="text-byte-maroon" size={38} />
@@ -301,6 +334,12 @@ export default function AdminDashboard() {
               <select className="field" value={seminarForm.poster_fit || "cover"} onChange={(event) => setSeminarForm({ ...seminarForm, poster_fit: event.target.value })}>
                 <option value="cover">Fill frame</option>
                 <option value="contain">Fit full image</option>
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm font-bold">
+              Poster crop position
+              <select className="field" value={seminarForm.poster_position || "center"} onChange={(event) => setSeminarForm({ ...seminarForm, poster_position: event.target.value })}>
+                {imagePositions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
             <label className="grid gap-2 text-sm font-bold">

@@ -6,7 +6,7 @@ const discordInviteUrl = "https://discord.gg/PHaqJTz9H";
 const posterPath = "/img/seminar-poster.png";
 
 export default function Seminar() {
-  const [seminar, setSeminar] = useState({ poster_data_url: posterPath, poster_fit: "cover", registration_url: discordInviteUrl });
+  const [seminar, setSeminar] = useState({ poster_data_url: posterPath, poster_fit: "cover", poster_position: "center", registration_url: discordInviteUrl });
   const [posterReady, setPosterReady] = useState(true);
   const registrationUrl = seminar.registration_url || discordInviteUrl;
   const posterUrl = seminar.poster_data_url || posterPath;
@@ -64,6 +64,7 @@ export default function Seminar() {
                 src={posterUrl}
                 alt="ByteWorks Academy seminar poster"
                 className={`aspect-[4/5] h-full w-full bg-byte-ash ${seminar.poster_fit === "contain" ? "object-contain" : "object-cover"}`}
+                style={{ objectPosition: seminar.poster_position || "center" }}
                 onError={() => setPosterReady(false)}
               />
             ) : (

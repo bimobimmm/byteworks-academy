@@ -156,8 +156,10 @@ async function migrateSqlite(db) {
       id INTEGER PRIMARY KEY,
       poster_data_url TEXT NOT NULL DEFAULT '',
       poster_fit TEXT NOT NULL DEFAULT 'cover',
+      poster_position TEXT NOT NULL DEFAULT 'center',
       home_hero_data_url TEXT NOT NULL DEFAULT '',
       home_hero_fit TEXT NOT NULL DEFAULT 'cover',
+      home_hero_position TEXT NOT NULL DEFAULT 'center',
       registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
     );
   `);
@@ -165,6 +167,8 @@ async function migrateSqlite(db) {
   await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
   await ensureColumn(db, "seminar_settings", "poster_fit", "TEXT NOT NULL DEFAULT 'cover'");
   await ensureColumn(db, "seminar_settings", "home_hero_fit", "TEXT NOT NULL DEFAULT 'cover'");
+  await ensureColumn(db, "seminar_settings", "poster_position", "TEXT NOT NULL DEFAULT 'center'");
+  await ensureColumn(db, "seminar_settings", "home_hero_position", "TEXT NOT NULL DEFAULT 'center'");
   await dedupeExamResultsSqlite(db);
   await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_results_user_exam ON exam_results (user_id, exam_id)");
   await db.run("INSERT OR IGNORE INTO seminar_settings (id) VALUES (1)");
@@ -251,8 +255,10 @@ async function migratePostgres(db) {
       id INTEGER PRIMARY KEY,
       poster_data_url TEXT NOT NULL DEFAULT '',
       poster_fit TEXT NOT NULL DEFAULT 'cover',
+      poster_position TEXT NOT NULL DEFAULT 'center',
       home_hero_data_url TEXT NOT NULL DEFAULT '',
       home_hero_fit TEXT NOT NULL DEFAULT 'cover',
+      home_hero_position TEXT NOT NULL DEFAULT 'center',
       registration_url TEXT NOT NULL DEFAULT 'https://discord.gg/PHaqJTz9H'
     );
   `);
@@ -260,6 +266,8 @@ async function migratePostgres(db) {
   await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
   await ensureColumn(db, "seminar_settings", "poster_fit", "TEXT NOT NULL DEFAULT 'cover'");
   await ensureColumn(db, "seminar_settings", "home_hero_fit", "TEXT NOT NULL DEFAULT 'cover'");
+  await ensureColumn(db, "seminar_settings", "poster_position", "TEXT NOT NULL DEFAULT 'center'");
+  await ensureColumn(db, "seminar_settings", "home_hero_position", "TEXT NOT NULL DEFAULT 'center'");
   await dedupeExamResultsPostgres(db);
   await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_results_user_exam ON exam_results (user_id, exam_id)");
   await db.run("INSERT INTO seminar_settings (id) VALUES (?) ON CONFLICT (id) DO NOTHING", 1);

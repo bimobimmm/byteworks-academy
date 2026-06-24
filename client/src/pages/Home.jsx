@@ -10,8 +10,12 @@ export default function Home() {
 
   useEffect(() => {
     api("/seminar")
-      .then((data) => setHomeHero({ image: data.seminar?.home_hero_data_url || "", fit: data.seminar?.home_hero_fit || "cover" }))
-      .catch(() => setHomeHero({ image: "", fit: "cover" }));
+      .then((data) => setHomeHero({
+        image: data.seminar?.home_hero_data_url || "",
+        fit: data.seminar?.home_hero_fit || "cover",
+        position: data.seminar?.home_hero_position || "center"
+      }))
+      .catch(() => setHomeHero({ image: "", fit: "cover", position: "center" }));
   }, []);
 
   return (
@@ -46,6 +50,7 @@ export default function Home() {
                 src={homeHero.image}
                 alt="ByteWorks Academy homepage hero"
                 className={`aspect-[4/3] h-full w-full bg-byte-ash ${homeHero.fit === "contain" ? "object-contain" : "object-cover"} lg:aspect-[1.07/1]`}
+                style={{ objectPosition: homeHero.position || "center" }}
               />
             ) : (
               <div className="flex aspect-[4/3] min-h-[360px] flex-col items-center justify-center bg-byte-ash px-8 text-center lg:aspect-[1.07/1] lg:min-h-[520px]">
