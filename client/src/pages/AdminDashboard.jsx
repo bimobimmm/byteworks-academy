@@ -197,7 +197,7 @@ export default function AdminDashboard() {
     setSeminarStatus("Removing homepage hero image...");
     const data = await api("/seminar", {
       method: "PUT",
-      body: JSON.stringify({ ...seminarForm, remove_home_hero: true })
+      body: JSON.stringify({ registration_url: seminarForm.registration_url, remove_home_hero: true })
     });
     setSeminarForm(data.seminar);
     setSeminarStatus("Homepage hero image removed.");

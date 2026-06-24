@@ -45,17 +45,33 @@ router.get("/", async (req, res) => {
 
 router.put("/", authMiddleware, adminOnly, async (req, res) => {
   const db = req.app.locals.db;
-  const current = await getSeminarSettings(db);
-  const registrationUrl = normalizeUrl(req.body.registration_url);
-  const posterDataUrl = req.body.remove_poster ? "" : validateImageDataUrl(req.body.poster_data_url ?? current.poster_data_url, "Seminar poster");
-  const homeHeroDataUrl = req.body.remove_home_hero ? "" : validateImageDataUrl(req.body.home_hero_data_url ?? current.home_hero_data_url, "Homepage hero image");
+  const updates = [];
+  const params = [];
 
-  await db.run(
-    "UPDATE seminar_settings SET poster_data_url = ?, home_hero_data_url = ?, registration_url = ? WHERE id = 1",
-    posterDataUrl,
-    homeHeroDataUrl,
-    registrationUrl
-  );
+  if (req.body.registration_url !== undefined) {
+    updates.push("registration_url = ?");
+    params.push(normalizeUrl(req.body.registration_url));
+  }
+
+  if (req.body.remove_poster) {
+    updates.push("poster_data_url = ?");
+    params.push("");
+  } else if (req.body.poster_data_url !== undefined) {
+    updates.push("poster_data_url = ?");
+    params.push(validateImageDataUrl(req.body.poster_data_url, "Seminar poster"));
+  }
+
+  if (req.body.remove_home_hero) {
+    updates.push("home_hero_data_url = ?");
+    params.push("");
+  } else if (req.body.home_hero_data_url !== undefined) {
+    updates.push("home_hero_data_url = ?");
+    params.push(validateImageDataUrl(req.body.home_hero_data_url, "Homepage hero image"));
+  }
+
+  if (updates.length > 0) {
+    await db.run(`UPDATE seminar_settings SET ${updates.join(", ")} WHERE id = 1`, ...params);
+  }
 
   const seminar = await getSeminarSettings(db);
   res.json({ seminar });
