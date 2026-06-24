@@ -27,10 +27,10 @@ export default function Seminar() {
           <div>
             <p className="eyebrow mb-5">ByteWorks Academy Seminar</p>
             <h1 className="max-w-3xl text-3xl font-black leading-tight text-byte-black sm:text-4xl md:text-6xl">
-              Daftar Seminar ByteWorks Academy
+              Register for the ByteWorks Academy Seminar
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-byte-graphite">
-              Ikuti update seminar, materi, dan arahan pendaftaran langsung melalui komunitas Discord ByteWorks Academy.
+              Get seminar updates, learning materials, and registration guidance directly through the ByteWorks Academy Discord community.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -39,16 +39,16 @@ export default function Seminar() {
               </a>
               {posterReady && (
                 <a className="btn-secondary w-full sm:w-auto" href={posterUrl} target="_blank" rel="noreferrer">
-                  Lihat Poster
+                  View Poster
                 </a>
               )}
             </div>
 
             <div className="mt-10 grid gap-3 sm:grid-cols-3">
               {[
-                ["Informasi seminar", CalendarDays],
-                ["Diskusi peserta", MessagesSquare],
-                ["Komunitas DBA", UsersRound]
+                ["Seminar details", CalendarDays],
+                ["Participant discussion", MessagesSquare],
+                ["DBA community", UsersRound]
               ].map(([label, Icon]) => (
                 <div key={label} className="flex items-center gap-3 rounded-md border border-byte-line bg-byte-ash px-4 py-3 text-sm font-bold">
                   <Icon className="text-byte-maroon" size={17} />
@@ -62,7 +62,7 @@ export default function Seminar() {
             {posterReady ? (
               <img
                 src={posterUrl}
-                alt="Poster seminar ByteWorks Academy"
+                alt="ByteWorks Academy seminar poster"
                 className="aspect-[4/5] h-full w-full bg-byte-ash object-cover"
                 onError={() => setPosterReady(false)}
               />
@@ -71,9 +71,9 @@ export default function Seminar() {
                 <span className="flex h-16 w-16 items-center justify-center rounded-md bg-white text-byte-maroon shadow-sm">
                   <ImageUp size={30} />
                 </span>
-                <h2 className="mt-6 text-2xl font-black text-byte-black">Upload poster seminar</h2>
+                <h2 className="mt-6 text-2xl font-black text-byte-black">Upload the seminar poster</h2>
                 <p className="mt-3 max-w-md text-sm leading-6 text-byte-graphite">
-                  Buka dashboard admin untuk mengunggah poster seminar agar tampil otomatis di halaman ini.
+                  Use the admin dashboard to upload the seminar poster and publish it automatically on this page.
                 </p>
               </div>
             )}
@@ -86,13 +86,13 @@ export default function Seminar() {
           <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
             <div>
               <p className="eyebrow">Registration</p>
-              <h2 className="mt-3 text-3xl font-bold">Pendaftaran diarahkan ke Discord</h2>
+              <h2 className="mt-3 text-3xl font-bold">Registration is handled through Discord</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-byte-graphite">
-                Peserta dapat bergabung ke server Discord untuk mendapatkan informasi jadwal, pengumuman, dan instruksi lanjutan.
+                Participants can join the Discord server to receive schedule details, announcements, and next-step instructions.
               </p>
             </div>
             <a className="btn-primary w-full md:w-auto" href={registrationUrl} target="_blank" rel="noreferrer">
-              Daftar via Discord <ArrowUpRight size={18} />
+              Register via Discord <ArrowUpRight size={18} />
             </a>
           </div>
         </div>

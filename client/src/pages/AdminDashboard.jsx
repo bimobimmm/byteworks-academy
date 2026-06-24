@@ -155,14 +155,14 @@ export default function AdminDashboard() {
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setSeminarStatus("Poster maksimal 5 MB.");
+      setSeminarStatus("Poster must be 5 MB or smaller.");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       setSeminarForm((current) => ({ ...current, poster_data_url: reader.result }));
-      setSeminarStatus("Poster siap disimpan.");
+      setSeminarStatus("Poster is ready to save.");
     };
     reader.readAsDataURL(file);
   }
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
           <div>
             <h2 className="text-2xl font-black">Seminar Page</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-byte-graphite">
-              Upload poster seminar dan atur link pendaftaran yang tampil di halaman publik.
+              Upload the seminar poster and manage the registration link shown on the public page.
             </p>
           </div>
           <a className="btn-secondary py-2" href="/seminar" target="_blank" rel="noreferrer">Open Seminar Page</a>
@@ -218,11 +218,11 @@ export default function AdminDashboard() {
 
           <div className="grid content-start gap-4">
             <label className="grid gap-2 text-sm font-bold">
-              Poster seminar
+              Seminar poster
               <input className="field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSeminarPoster} />
             </label>
             <label className="grid gap-2 text-sm font-bold">
-              Link pendaftaran
+              Registration link
               <input
                 className="field"
                 placeholder="https://discord.gg/PHaqJTz9H"
