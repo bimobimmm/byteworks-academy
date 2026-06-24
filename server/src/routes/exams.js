@@ -130,15 +130,23 @@ router.post("/:id/submit", authMiddleware, memberOnly, async (req, res) => {
   const score = Math.round((correct / questions.length) * 100);
   const passed = score >= exam.passing_score;
 
-  await db.run(
-    "INSERT INTO exam_results (user_id, exam_id, score, passed) VALUES (?, ?, ?, ?)",
+  const savedResult = await db.run(
+    `
+      INSERT INTO exam_results (user_id, exam_id, score, passed)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT (user_id, exam_id) DO UPDATE SET
+        score = excluded.score,
+        passed = excluded.passed,
+        created_at = CURRENT_TIMESTAMP
+      RETURNING id
+    `,
     req.user.id,
     req.params.id,
     score,
     passed ? 1 : 0
   );
 
-  res.json({ score, passed, passingScore: exam.passing_score, total: questions.length, correct });
+  res.json({ resultId: savedResult.lastID, score, passed, passingScore: exam.passing_score, total: questions.length, correct });
 });
 
 export default router;

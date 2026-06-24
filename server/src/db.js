@@ -154,6 +154,8 @@ async function migrateSqlite(db) {
   await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
   await ensureColumn(db, "seminar_settings", "poster_fit", "TEXT NOT NULL DEFAULT 'cover'");
   await ensureColumn(db, "seminar_settings", "home_hero_fit", "TEXT NOT NULL DEFAULT 'cover'");
+  await dedupeExamResultsSqlite(db);
+  await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_results_user_exam ON exam_results (user_id, exam_id)");
   await db.run("INSERT OR IGNORE INTO seminar_settings (id) VALUES (1)");
 }
 
@@ -239,7 +241,43 @@ async function migratePostgres(db) {
   await ensureColumn(db, "seminar_settings", "home_hero_data_url", "TEXT NOT NULL DEFAULT ''");
   await ensureColumn(db, "seminar_settings", "poster_fit", "TEXT NOT NULL DEFAULT 'cover'");
   await ensureColumn(db, "seminar_settings", "home_hero_fit", "TEXT NOT NULL DEFAULT 'cover'");
+  await dedupeExamResultsPostgres(db);
+  await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_results_user_exam ON exam_results (user_id, exam_id)");
   await db.run("INSERT INTO seminar_settings (id) VALUES (?) ON CONFLICT (id) DO NOTHING", 1);
+}
+
+async function dedupeExamResultsSqlite(db) {
+  await db.exec(`
+    DELETE FROM exam_results
+    WHERE id NOT IN (
+      SELECT id
+      FROM (
+        SELECT id, ROW_NUMBER() OVER (
+          PARTITION BY user_id, exam_id
+          ORDER BY passed DESC, score DESC, created_at DESC, id DESC
+        ) as row_number
+        FROM exam_results
+      )
+      WHERE row_number = 1
+    );
+  `);
+}
+
+async function dedupeExamResultsPostgres(db) {
+  await db.exec(`
+    DELETE FROM exam_results
+    WHERE id IN (
+      SELECT id
+      FROM (
+        SELECT id, ROW_NUMBER() OVER (
+          PARTITION BY user_id, exam_id
+          ORDER BY passed DESC, score DESC, created_at DESC, id DESC
+        ) as row_number
+        FROM exam_results
+      ) ranked
+      WHERE ranked.row_number > 1
+    );
+  `);
 }
 
 async function ensureColumn(db, tableName, columnName, columnDefinition) {
